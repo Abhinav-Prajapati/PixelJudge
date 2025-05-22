@@ -11,6 +11,7 @@ import {
   HttpException,
   HttpStatus,
   BadRequestException,
+  Query,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
@@ -18,11 +19,11 @@ import { FilesService } from './files.service';
 import * as path from 'path';
 
 // TODO: Move to environment variables
-const uploadPath = path.join(process.cwd(), 'library');
+const uploadPath = path.join(process.cwd(), 'library/');
 
 @Controller('files')
 export class FilesController {
-  constructor(private filesService: FilesService) {}
+  constructor(private filesService: FilesService) { }
 
   /**
    * Uploads a single image file with duplicate checking
@@ -63,10 +64,11 @@ export class FilesController {
   /**
    * Serves image files by filename
    */
-  @Get(':filename')
-  async serveImage(@Param('filename') filename: string, @Res() res: Response) {
+  @Get()
+  async serveImage(@Query('path') filename: string, @Res() res: Response) {
     try {
       const filePath = path.join(uploadPath, filename);
+      console.log(filePath)
 
       if (!this.filesService.checkFileExists(filePath)) {
         throw new NotFoundException('Image not found');
