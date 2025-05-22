@@ -12,6 +12,7 @@ import {
   HttpStatus,
   BadRequestException,
   Query,
+  Req,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { Response } from 'express';
@@ -100,6 +101,75 @@ export class FilesController {
       }
       throw new HttpException(
         'Failed to serve image',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+ * Returns all images with their original and thumbnail URLs
+ */
+  @Get('images')
+  async getAllImages(@Req() request: Request) {
+    try {
+      const baseUrl = `http://localhost:3000`
+      const images = await this.filesService.getAllImagesWithUrls(baseUrl);
+      return {
+        success: true,
+        data: images,
+        total: images.length,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        'Failed to retrieve images',
+        HttpStatus.INTERNAL_SERVER_ERROR,
+      );
+    }
+  }
+
+  /**
+   * Returns paginated images with their original and thumbnail URLs
+   */
+  @Get('images/paginated')
+  async getPaginatedImages(
+    @Query('page') page: string = '1',
+    @Query('limit') limit: string = '20',
+    @Query('tags') tags: string = '',
+    @Req() request: Request
+  ) {
+    try {
+      const baseUrl = `http://localhost:3000`
+      const pageNumber = parseInt(page, 10) || 1;
+      const limitNumber = parseInt(limit, 10) || 20;
+
+      // Validate pagination parameters
+      if (pageNumber < 1) {
+        throw new BadRequestException('Page number must be greater than 0');
+      }
+      if (limitNumber < 1 || limitNumber > 100) {
+        throw new BadRequestException('Limit must be between 1 and 100');
+      }
+
+      let result = await this.filesService.getPaginatedImagesWithUrls(
+        baseUrl,
+        pageNumber,
+        limitNumber
+      );
+
+      return {
+        success: true,
+        data: result.images,
+        pagination: result.pagination,
+      };
+    } catch (error) {
+      if (error instanceof HttpException) {
+        throw error;
+      }
+      throw new HttpException(
+        'Failed to retrieve paginated images',
         HttpStatus.INTERNAL_SERVER_ERROR,
       );
     }
