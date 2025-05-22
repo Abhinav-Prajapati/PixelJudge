@@ -154,7 +154,134 @@ export class FilesService {
       throw new InternalServerErrorException('Failed to save file to filesystem');
     }
   }
+  /**
+     * Returns all images with their original and thumbnail URLs
+     */
+  async getAllImagesWithUrls(baseUrl: string): Promise<{
+    id: string;
+    originalName: string;
+    originalUrl: string;
+    thumbnailUrl: string | null;
+    width: number | null;
+    height: number | null;
+    fileSize: number | null;
+    mimeType: string | null;
+    title: string | null;
+    description: string | null;
+    tags: string[];
+    createdAt: Date;
+    updatedAt: Date;
+  }[]> {
+    try {
+      const images = await this.prisma.image.findMany({
+        orderBy: {
+          createdAt: 'desc', // Most recent first
+        },
+      });
 
+      return images.map(image => ({
+        id: image.id,
+        originalName: image.originalName,
+        originalUrl: `${baseUrl}/files?path=${image.filePath}`,
+        thumbnailUrl: image.thumbnailFilePath
+          ? `${baseUrl}/files?path=${image.thumbnailFilePath}`
+          : null,
+        width: image.width,
+        height: image.height,
+        fileSize: image.fileSize,
+        mimeType: image.mimeType,
+        title: image.title,
+        description: image.description,
+        tags: image.tags,
+        createdAt: image.createdAt,
+        updatedAt: image.updatedAt,
+      }));
+    } catch (error) {
+      console.error('Failed to get images with URLs:', error);
+      throw new InternalServerErrorException('Failed to retrieve images');
+    }
+  }
+
+  /**
+   * Returns paginated images with their original and thumbnail URLs
+   */
+  async getPaginatedImagesWithUrls(
+    baseUrl: string,
+    page: number = 1,
+    limit: number = 20
+  ): Promise<{
+    images: {
+      id: string;
+      originalName: string;
+      originalUrl: string;
+      thumbnailUrl: string | null;
+      width: number | null;
+      height: number | null;
+      fileSize: number | null;
+      mimeType: string | null;
+      title: string | null;
+      description: string | null;
+      tags: string[];
+      createdAt: Date;
+      updatedAt: Date;
+    }[];
+    pagination: {
+      currentPage: number;
+      totalPages: number;
+      totalItems: number;
+      hasNext: boolean;
+      hasPrevious: boolean;
+    };
+  }> {
+    try {
+      const skip = (page - 1) * limit;
+
+      // Get total count for pagination
+      const totalItems = await this.prisma.image.count();
+      const totalPages = Math.ceil(totalItems / limit);
+
+      // Get paginated images
+      const images = await this.prisma.image.findMany({
+        skip,
+        take: limit,
+        orderBy: {
+          createdAt: 'desc',
+        },
+      });
+
+      const imagesWithUrls = images.map(image => ({
+        id: image.id,
+        originalName: image.originalName,
+        originalUrl: `${baseUrl}/files?path=${image.filePath}`,
+        thumbnailUrl: image.thumbnailFilePath
+          ? `${baseUrl}/files?path=${image.thumbnailFilePath}`
+          : null,
+        width: image.width,
+        height: image.height,
+        fileSize: image.fileSize,
+        mimeType: image.mimeType,
+        title: image.title,
+        description: image.description,
+        tags: image.tags,
+        createdAt: image.createdAt,
+        updatedAt: image.updatedAt,
+      }));
+
+      return {
+        images: imagesWithUrls,
+        pagination: {
+          currentPage: page,
+          totalPages,
+          totalItems,
+          hasNext: page < totalPages,
+          hasPrevious: page > 1,
+        },
+      };
+    } catch (error) {
+      console.error('Failed to get paginated images with URLs:', error);
+      throw new InternalServerErrorException('Failed to retrieve paginated images');
+    }
+  }
   /**
    * Saves thumbnail buffer to filesystem
    */
