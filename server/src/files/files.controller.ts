@@ -1,30 +1,38 @@
+/*
+ * TODO: make sure not to save duplicate image []
+ * */
+
 import {
   Controller,
   Get,
+  Res,
   Post,
   Delete,
   Param,
   UploadedFile,
+  NotFoundException,
   UseInterceptors,
   HttpException,
   HttpStatus,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { diskStorage } from 'multer';
-import * as fs from 'fs';
+import { createReadStream, existsSync } from 'fs';
+import { extname, join } from 'path';
 import * as path from 'path';
-import { extname } from 'path';
+import {Response} from 'express';
+
+const uploadPath = path.join(process.cwd(), 'library');
 
 @Controller('files')
 export class FilesController {
-  private readonly uploadPath = path.join(__dirname, '../../images-library');
 
   // 📤 Upload a single file
   @Post('upload')
   @UseInterceptors(
     FileInterceptor('file', {
       storage: diskStorage({
-        destination: './images-library',
+        destination: uploadPath,
         filename: (req, file, cb) => {
           const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
           const ext = extname(file.originalname);
@@ -47,22 +55,30 @@ export class FilesController {
     return {
       message: 'File uploaded successfully',
       filename: file.filename,
-      path: `/images/${file.filename}`,
+      path: `/library/${file.filename}`,
     };
   }
 
-  // 📂 List all files
-  @Get()
-  findAll() {
-    try {
-      const files = fs.readdirSync(this.uploadPath);
-      return files.map((filename) => ({
-        filename,
-        url: `/images/${filename}`,
-      }));
-    } catch (err) {
-      throw new HttpException('Failed to read upload directory', HttpStatus.INTERNAL_SERVER_ERROR);
+  @Get(':filename')
+  serveImage(@Param('filename') filename: string, @Res() res: Response){
+    const filePath = join(uploadPath, filename)
+    if (!existsSync(filePath)) {
+      throw new NotFoundException('Image not found');
     }
+
+    // Set appropriate content-type header based on file extension (basic example)
+    if (filename.endsWith('.jpg') || filename.endsWith('.jpeg')) {
+      res.setHeader('Content-Type', 'image/jpeg');
+    } else if (filename.endsWith('.png')) {
+      res.setHeader('Content-Type', 'image/png');
+    } else if (filename.endsWith('.gif')) {
+      res.setHeader('Content-Type', 'image/gif');
+    } else {
+      res.setHeader('Content-Type', 'application/octet-stream');
+    }
+    // Stream the file to the response
+    const fileStream = createReadStream(filePath);
+    fileStream.pipe(res);
   }
 }
 
