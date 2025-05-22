@@ -3,11 +3,13 @@ export class CreateFileDto {
   filename: string;
   filePath: string;
   checksum: string;
-  mimeType: string;
-  fileSize: number;
-  width?: number | null;
-  height?: number | null;
-  title?: string | null;
-  description?: string | null;
-  tags?: string[] | null;
+  mimeType?: string;
+  fileSize?: number;
+  width?: number;
+  height?: number;
+  title?: string;
+  description?: string;
+  tags?: string[];
+  thumbnailFilename?: string;
+  thumbnailFilePath?: string;
 }
