@@ -1,0 +1,42 @@
+generator client {
+  provider = "prisma-client-js"
+  previewFeatures = ["multiSchema", "postgresqlExtensions"]
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Image {
+  id          String   @id @default(cuid())
+  
+  // File information
+  originalName String
+  filename     String   @unique // Generated filename on disk
+  filePath     String   // Full path to file
+  checksum     String   @unique // MD5/SHA256 hash for duplicate detection
+  
+  // File metadata
+  mimeType     String?   // image/jpeg, image/png, etc.
+  fileSize     Int?      // Size in bytes
+  width        Int?     // Image width in pixels
+  height       Int?     // Image height in pixels
+  
+  // Timestamps
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+  
+  // Optional metadata
+  title        String?
+  description  String?
+  tags         String[] // Array of tags
+  
+  // File status
+  isActive     Boolean  @default(true)
+  
+  @@map("images")
+  @@index([checksum])
+  @@index([createdAt])
+  @@index([tags])
+}
