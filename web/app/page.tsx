@@ -3,55 +3,84 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 
-const PhotoGallery = () => {
-  const [images, setImages] = useState([]);
-  const [selectedImage, setSelectedImage] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
+// Type definitions
+interface ImageData {
+  id: string | number;
+  originalName: string;
+  thumbnailUrl: string;
+  originalUrl: string;
+  width: number;
+  height: number;
+  fileSize: number;
+  mimeType: string;
+  createdAt: string;
+  title?: string;
+  description?: string;
+}
+
+interface ApiResponse {
+  success: boolean;
+  data: ImageData[];
+  message?: string;
+}
+
+const PhotoGallery: React.FC = () => {
+  const [images, setImages] = useState<ImageData[]>([]);
+  const [selectedImage, setSelectedImage] = useState<ImageData | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string>('');
 
   // Replace with your actual API endpoint
-  const BASE_URL = 'http://localhost:3000';
+  const BASE_URL: string = 'http://localhost:3000';
 
   useEffect(() => {
     fetchImages();
   }, []);
 
-  const fetchImages = async () => {
+  const fetchImages = async (): Promise<void> => {
     try {
       setLoading(true);
+      setError('');
+      
       // Replace this URL with your actual API endpoint
-      const response = await fetch(`${BASE_URL}/files/images`);
-      const result = await response.json();
+      const response: Response = await fetch(`${BASE_URL}/files/images`);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
+      const result: ApiResponse = await response.json();
 
       if (result.success) {
         setImages(result.data);
       } else {
-        setError('Failed to fetch images');
+        setError(result.message || 'Failed to fetch images');
       }
     } catch (err) {
-      setError('Error fetching images: ' + err.message);
+      const errorMessage = err instanceof Error ? err.message : 'Unknown error occurred';
+      setError('Error fetching images: ' + errorMessage);
     } finally {
       setLoading(false);
     }
   };
 
-  const openModal = (image) => {
+  const openModal = (image: ImageData): void => {
     setSelectedImage(image);
   };
 
-  const closeModal = () => {
+  const closeModal = (): void => {
     setSelectedImage(null);
   };
 
-  const formatFileSize = (bytes) => {
+  const formatFileSize = (bytes: number): string => {
     if (bytes === 0) return '0 Bytes';
     const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
+    const sizes: string[] = ['Bytes', 'KB', 'MB', 'GB'];
     const i = Math.floor(Math.log(bytes) / Math.log(k));
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
   };
 
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string): string => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
       month: 'short',
@@ -61,11 +90,15 @@ const PhotoGallery = () => {
     });
   };
 
+  const handleModalClick = (e: React.MouseEvent<HTMLDivElement>): void => {
+    e.stopPropagation();
+  };
+
   if (loading) {
     return (
-      < div className="flex justify-center items-center h-64" >
+      <div className="flex justify-center items-center h-64">
         <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
-      </div >
+      </div>
     );
   }
 
@@ -97,7 +130,7 @@ const PhotoGallery = () => {
 
           {/* Gallery Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-            {images.map((image) => (
+            {images.map((image: ImageData) => (
               <div
                 key={image.id}
                 className="relative group cursor-pointer overflow-hidden rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
@@ -135,12 +168,13 @@ const PhotoGallery = () => {
         >
           <div
             className="relative max-w-4xl max-h-full bg-white rounded-lg shadow-2xl overflow-hidden"
-            onClick={(e) => e.stopPropagation()}
+            onClick={handleModalClick}
           >
             {/* Close button */}
             <button
               onClick={closeModal}
               className="absolute top-4 right-4 z-10 bg-black bg-opacity-50 text-white rounded-full w-10 h-10 flex items-center justify-center hover:bg-opacity-70 transition-colors"
+              aria-label="Close modal"
             >
               ×
             </button>
