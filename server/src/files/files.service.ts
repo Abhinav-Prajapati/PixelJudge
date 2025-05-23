@@ -47,6 +47,8 @@ export class FilesService {
           tags: createFileDto.tags || undefined,
           thubmnailFilename: createFileDto.thumbnailFilename,
           thumbnailFilePath: createFileDto.thumbnailFilePath,
+          thumbnailHeight: createFileDto.thumbnailHeight,
+          thumbnailWidth: createFileDto.thumbnailWidth
         },
       });
       return image;
@@ -104,7 +106,7 @@ export class FilesService {
       const { quality = 80 } = { ...this.defaultThumbnailOptions, ...options };
 
       const thumbnail = await sharp(imageBuffer)
-        .resize({ width: 400 }) // Only set width, auto height to maintain aspect ratio
+        .resize({ height: 350 }) // Only set hight, auto width to maintain aspect ratio
         .jpeg({ quality })      // JPEG format with 70% quality (i.e., 30% downgrade)
         .toBuffer();
 
@@ -114,6 +116,7 @@ export class FilesService {
       throw new InternalServerErrorException('Failed to generate thumbnail');
     }
   }
+
   /**
    * Extracts image metadata using Sharp
    */
@@ -171,6 +174,8 @@ export class FilesService {
     tags: string[];
     createdAt: Date;
     updatedAt: Date;
+    thumbnailHeight: number | null;
+    thumbnailWidth: number | null;
   }[]> {
     try {
       const images = await this.prisma.image.findMany({
@@ -183,13 +188,15 @@ export class FilesService {
         id: image.id,
         originalName: image.originalName,
         originalUrl: `${baseUrl}/files?path=${image.filePath}`,
-        thumbnailUrl: image.thumbnailFilePath
-          ? `${baseUrl}/files?path=${image.thumbnailFilePath}`
-          : null,
         width: image.width,
         height: image.height,
         fileSize: image.fileSize,
         mimeType: image.mimeType,
+        thumbnailUrl: image.thumbnailFilePath
+          ? `${baseUrl}/files?path=${image.thumbnailFilePath}`
+          : null,
+        thumbnailHeight: image.thumbnailHeight,
+        thumbnailWidth: image.thumbnailWidth,
         title: image.title,
         description: image.description,
         tags: image.tags,
@@ -358,6 +365,9 @@ export class FilesService {
         uploadPath
       );
 
+      // Extract thumb metadata
+      const thumbnailSize = await this.extractImageMetadata(thumbnailBuffer);
+
       // Create image record
       const createFileDto: CreateFileDto = {
         originalName: file.originalname,
@@ -373,6 +383,8 @@ export class FilesService {
         tags: [''],
         thumbnailFilename,
         thumbnailFilePath,
+        thumbnailHeight: thumbnailSize.height, 
+        thumbnailWidth: thumbnailSize.width,
       };
 
       await this.createImageRecord(createFileDto);

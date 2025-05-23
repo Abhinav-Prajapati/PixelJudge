@@ -12,4 +12,6 @@ export class CreateFileDto {
   tags?: string[];
   thumbnailFilename?: string;
   thumbnailFilePath?: string;
+  thumbnailWidth? :number;
+  thumbnailHeight? :number;    
 }
