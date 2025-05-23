@@ -31,9 +31,10 @@ model Image {
   title        String?
   description  String?
   tags         String[] // Array of tags
-  
-  // File status
-  isActive     Boolean  @default(true)
+
+  //Thumbnail 
+  thubmnailFilename     String?   @unique
+  thumbnailFilePath     String?  
   
   @@map("images")
   @@index([checksum])
