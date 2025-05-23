@@ -16,6 +16,8 @@ interface ImageData {
   createdAt: string;
   title?: string;
   description?: string;
+  thumbnailHeight?: number;
+  thumbnailWidth?: number;
 }
 
 interface ApiResponse {
@@ -23,6 +25,8 @@ interface ApiResponse {
   data: ImageData[];
   message?: string;
 }
+
+const thumbScale : number = 0.6;
 
 const PhotoGallery: React.FC = () => {
   const [images, setImages] = useState<ImageData[]>([]);
@@ -129,30 +133,21 @@ const PhotoGallery: React.FC = () => {
           </div>
 
           {/* Gallery Grid */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
+          <div className="flex justify-start border gap-x-2 ">
             {images.map((image: ImageData) => (
               <div
                 key={image.id}
-                className="relative group cursor-pointer overflow-hidden rounded-lg shadow-md hover:shadow-lg transition-shadow duration-300"
+                className="relative group cursor-pointer overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300"
                 onClick={() => openModal(image)}
               >
-                <div className="aspect-square relative">
+                <div className="relative ">
                   <Image
                     src={image.thumbnailUrl}
                     alt={image.originalName}
-                    fill
-                    className="object-cover group-hover:scale-105 transition-transform duration-300"
-                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                    height={image.thumbnailHeight! * thumbScale}
+                    width={image.thumbnailWidth! * thumbScale}
                   />
                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity duration-300" />
-
-                  {/* Overlay info */}
-                  <div className="absolute bottom-0 left-0 right-0 p-2 bg-gradient-to-t from-black/70 to-transparent text-white opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                    <p className="text-sm font-medium truncate">{image.originalName}</p>
-                    <p className="text-xs text-gray-300">
-                      {image.width} × {image.height} • {formatFileSize(image.fileSize)}
-                    </p>
-                  </div>
                 </div>
               </div>
             ))}
