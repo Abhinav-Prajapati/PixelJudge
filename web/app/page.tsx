@@ -2,6 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
+import FileUploader from '@/components/FileUpLoader';
+import { ToastContainer, toast } from 'react-toastify';
+import 'react-toastify/dist/ReactToastify.css';
 
 // Type definitions
 interface ImageData {
@@ -34,9 +37,6 @@ const PhotoGallery: React.FC = () => {
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string>('');
 
-  // Replace with your actual API endpoint
-  const BASE_URL: string = 'http://localhost:3000';
-
   useEffect(() => {
     fetchImages();
   }, []);
@@ -47,7 +47,7 @@ const PhotoGallery: React.FC = () => {
       setError('');
       
       // Replace this URL with your actual API endpoint
-      const response: Response = await fetch(`${BASE_URL}/files/images`);
+      const response: Response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/files/images`);
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -216,6 +216,8 @@ const PhotoGallery: React.FC = () => {
           </div>
         </div>
       )}
+      <FileUploader/>
+      <ToastContainer aria-label="Notification messages" />
     </div>
   );
 };
