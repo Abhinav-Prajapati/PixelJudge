@@ -1,9 +1,8 @@
 'use client';
-
-import { useState, useEffect } from 'react';
-import Image from 'next/image';
 import FileUploader from '@/components/FileUpLoader';
-import { ToastContainer, toast } from 'react-toastify';
+import Image from 'next/image';
+import { useEffect, useState } from 'react';
+import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 
 // Type definitions
@@ -29,7 +28,7 @@ interface ApiResponse {
   message?: string;
 }
 
-const thumbScale : number = 0.6;
+const thumbScale: number = 0.6;
 
 const PhotoGallery: React.FC = () => {
   const [images, setImages] = useState<ImageData[]>([]);
@@ -45,14 +44,14 @@ const PhotoGallery: React.FC = () => {
     try {
       setLoading(true);
       setError('');
-      
+
       // Replace this URL with your actual API endpoint
       const response: Response = await fetch(`${process.env.NEXT_PUBLIC_API_BASE_URL}/files/images`);
-      
+
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
+
       const result: ApiResponse = await response.json();
 
       if (result.success) {
@@ -131,27 +130,37 @@ const PhotoGallery: React.FC = () => {
           <div className="text-center mb-6 text-gray-600">
             {images.length} image{images.length !== 1 ? 's' : ''}
           </div>
-
           {/* Gallery Grid */}
-          <div className="flex justify-start border gap-x-2 ">
-            {images.map((image: ImageData) => (
-              <div
-                key={image.id}
-                className="relative group cursor-pointer overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300"
-                onClick={() => openModal(image)}
-              >
-                <div className="relative ">
+          <div className="flex flex-wrap justify-start border gap-x-2 gap-y-6">
+            {images.map((image: ImageData) => {
+              const isLandscape = image.thumbnailWidth! > image.thumbnailHeight!;
+              const aspectRatio = 16 / 11 // looks good to eyes then 16 / 9
+              const baseWidth = 100
+              const containerWidth = isLandscape ? (baseWidth * aspectRatio * aspectRatio) : baseWidth;
+              const containerHeight = isLandscape ? (baseWidth * aspectRatio) : baseWidth * aspectRatio;
+
+              return (
+                <div
+                  key={image.id}
+                  className="relative group cursor-pointer overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300"
+                  style={{
+                    width: `${containerWidth}px`,
+                    height: `${containerHeight}px`
+                  }}
+                  onClick={() => openModal(image)}
+                >
                   <Image
                     src={image.thumbnailUrl}
                     alt={image.originalName}
-                    height={image.thumbnailHeight! * thumbScale}
-                    width={image.thumbnailWidth! * thumbScale}
+                    fill
+                    className="object-cover"
                   />
                   <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity duration-300" />
                 </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
+
         </>
       )}
 
@@ -216,7 +225,7 @@ const PhotoGallery: React.FC = () => {
           </div>
         </div>
       )}
-      <FileUploader/>
+      <FileUploader />
       <ToastContainer aria-label="Notification messages" />
     </div>
   );
