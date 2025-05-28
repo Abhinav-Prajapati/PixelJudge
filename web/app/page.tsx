@@ -127,39 +127,61 @@ const PhotoGallery: React.FC = () => {
         <div className="text-center text-gray-500">No images found</div>
       ) : (
         <>
-          <div className="text-center mb-6 text-gray-600">
-            {images.length} image{images.length !== 1 ? 's' : ''}
-          </div>
-          {/* Gallery Grid */}
-          <div className="flex flex-wrap justify-start border gap-x-2 gap-y-6">
-            {images.map((image: ImageData) => {
-              const isLandscape = image.thumbnailWidth! > image.thumbnailHeight!;
-              const aspectRatio = 16 / 11 // looks good to eyes then 16 / 9
-              const baseWidth = 100
-              const containerWidth = isLandscape ? (baseWidth * aspectRatio * aspectRatio) : baseWidth;
-              const containerHeight = isLandscape ? (baseWidth * aspectRatio) : baseWidth * aspectRatio;
-
-              return (
-                <div
-                  key={image.id}
-                  className="relative group cursor-pointer overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300"
-                  style={{
-                    width: `${containerWidth}px`,
-                    height: `${containerHeight}px`
-                  }}
-                  onClick={() => openModal(image)}
-                >
-                  <Image
-                    src={image.thumbnailUrl}
-                    alt={image.originalName}
-                    fill
-                    className="object-cover"
-                  />
-                  <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity duration-300" />
+          {/* Gallery Grid Grouped by Date */}
+          <div className="space-y-8">
+            {Object.entries(images).map(([date, dateImages]) => (
+              <div key={date} className="space-y-4">
+                {/* Date Header */}
+                <div className="flex items-center space-x-4">
+                  <h2 className="text-xl font-semibold text-gray-800 dark:text-gray-200">
+                    {new Date(date).toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                  </h2>
+                  <div className="flex-1 h-px bg-gray-300 dark:bg-gray-600"></div>
+                  <span className="text-sm text-gray-500 dark:text-gray-400">
+                    {dateImages.length} {dateImages.length === 1 ? 'image' : 'images'}
+                  </span>
                 </div>
-              );
-            })}
+
+                {/* Images Grid for this Date */}
+                <div className="flex flex-wrap justify-start gap-x-2 gap-y-6">
+                  {dateImages.map((image: ImageData) => {
+                    const isLandscape = image.thumbnailWidth! > image.thumbnailHeight!;
+                    const aspectRatio = 16 / 11; // looks good to eyes then 16 / 9
+                    const baseWidth = 100;
+                    const containerWidth = isLandscape ? (baseWidth * aspectRatio * aspectRatio) : baseWidth;
+                    const containerHeight = isLandscape ? (baseWidth * aspectRatio) : baseWidth * aspectRatio;
+
+                    return (
+                      <div
+                        key={image.id}
+                        className="relative group cursor-pointer overflow-hidden shadow-md hover:shadow-lg transition-shadow duration-300"
+                        style={{
+                          width: `${containerWidth}px`,
+                          height: `${containerHeight}px`
+                        }}
+                        onClick={() => openModal(image)}
+                      >
+                        <Image
+                          src={image.thumbnailUrl}
+                          alt={image.originalName}
+                          fill
+                          className="object-cover"
+                        />
+                        <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-opacity duration-300" />
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            ))}
           </div>
+
+
 
         </>
       )}
