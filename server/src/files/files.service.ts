@@ -1,11 +1,11 @@
-import { Injectable, ConflictException, InternalServerErrorException } from '@nestjs/common';
-import { CreateFileDto } from './dto/create-file.dto';
-import { PrismaService } from 'prisma/prisma.service';
+import { ConflictException, Injectable, InternalServerErrorException } from '@nestjs/common';
 import * as crypto from 'crypto';
 import * as fs from 'fs';
 import * as path from 'path';
-import { promisify } from 'util';
+import { PrismaService } from 'prisma/prisma.service';
 import * as sharp from 'sharp';
+import { promisify } from 'util';
+import { CreateFileDto } from './dto/create-file.dto';
 
 const writeFile = promisify(fs.writeFile);
 const unlink = promisify(fs.unlink);
@@ -157,26 +157,29 @@ export class FilesService {
       throw new InternalServerErrorException('Failed to save file to filesystem');
     }
   }
+
   /**
-     * Returns all images with their original and thumbnail URLs
-     */
+   * Returns all images grouped by date with their original and thumbnail URLs
+   */
   async getAllImagesWithUrls(baseUrl: string): Promise<{
-    id: string;
-    originalName: string;
-    originalUrl: string;
-    thumbnailUrl: string | null;
-    width: number | null;
-    height: number | null;
-    fileSize: number | null;
-    mimeType: string | null;
-    title: string | null;
-    description: string | null;
-    tags: string[];
-    createdAt: Date;
-    updatedAt: Date;
-    thumbnailHeight: number | null;
-    thumbnailWidth: number | null;
-  }[]> {
+    [date: string]: {
+      id: string;
+      originalName: string;
+      originalUrl: string;
+      thumbnailUrl: string | null;
+      width: number | null;
+      height: number | null;
+      fileSize: number | null;
+      mimeType: string | null;
+      title: string | null;
+      description: string | null;
+      tags: string[];
+      createdAt: Date;
+      updatedAt: Date;
+      thumbnailHeight: number | null;
+      thumbnailWidth: number | null;
+    }[];
+  }> {
     try {
       const images = await this.prisma.image.findMany({
         orderBy: {
@@ -184,25 +187,47 @@ export class FilesService {
         },
       });
 
-      return images.map(image => ({
-        id: image.id,
-        originalName: image.originalName,
-        originalUrl: `${baseUrl}/files?path=${image.filePath}`,
-        width: image.width,
-        height: image.height,
-        fileSize: image.fileSize,
-        mimeType: image.mimeType,
-        thumbnailUrl: image.thumbnailFilePath
-          ? `${baseUrl}/files?path=${image.thumbnailFilePath}`
-          : null,
-        thumbnailHeight: image.thumbnailHeight,
-        thumbnailWidth: image.thumbnailWidth,
-        title: image.title,
-        description: image.description,
-        tags: image.tags,
-        createdAt: image.createdAt,
-        updatedAt: image.updatedAt,
-      }));
+      // Group images by date (YYYY-MM-DD format)
+      const groupedImages: { [date: string]: any[] } = {};
+
+      images.forEach(image => {
+        // Format date as YYYY-MM-DD
+        const dateKey = image.createdAt.toISOString().split('T')[0];
+
+        if (!groupedImages[dateKey]) {
+          groupedImages[dateKey] = [];
+        }
+
+        groupedImages[dateKey].push({
+          id: image.id,
+          originalName: image.originalName,
+          originalUrl: `${baseUrl}/files?path=${image.filePath}`,
+          width: image.width,
+          height: image.height,
+          fileSize: image.fileSize,
+          mimeType: image.mimeType,
+          thumbnailUrl: image.thumbnailFilePath
+            ? `${baseUrl}/files?path=${image.thumbnailFilePath}`
+            : null,
+          thumbnailHeight: image.thumbnailHeight,
+          thumbnailWidth: image.thumbnailWidth,
+          title: image.title,
+          description: image.description,
+          tags: image.tags,
+          createdAt: image.createdAt,
+          updatedAt: image.updatedAt,
+        });
+      });
+
+      // Sort dates in descending order and create the final object
+      const sortedDates = Object.keys(groupedImages).sort((a, b) => b.localeCompare(a));
+      const result: { [date: string]: any[] } = {};
+
+      sortedDates.forEach(date => {
+        result[date] = groupedImages[date];
+      });
+
+      return result;
     } catch (error) {
       console.error('Failed to get images with URLs:', error);
       throw new InternalServerErrorException('Failed to retrieve images');
@@ -383,7 +408,7 @@ export class FilesService {
         tags: [''],
         thumbnailFilename,
         thumbnailFilePath,
-        thumbnailHeight: thumbnailSize.height, 
+        thumbnailHeight: thumbnailSize.height,
         thumbnailWidth: thumbnailSize.width,
       };
 
